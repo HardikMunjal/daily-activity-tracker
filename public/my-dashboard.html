@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+    <link href= "https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet" 
+      integrity="sha384giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<meta http-equiv="Pragma" content="no-cache">
+<style>
+    .container{
+       background-color: #016064;
+    }
+    p{
+    text-align: center;
+    }
+ </style>
+<body onload="load()">
+    <a href="http://localhost:3080/myscore">Check My Score</a>
+    <div class="container">
+        <div class="row">
+           <div class="col-sm">
+              <p id='running' class="fs-2 text-light">38</p>
+              <p class="text-light">Running</p>
+           </div>
+           <div class="col-sm">
+              <p id='exercise' class="fs-2 text-light">34</p>
+              <p class="text-light">Exercise</p>
+        </div>
+        <!-- <div class="col-sm">
+           <p class="fs-2 text-light"><span id='0103'>12</span>%</p>
+           <p class="text-light align-content-center">Average complain rate</p>
+        </div> -->
+        <div class="col-sm">
+            <p class="fs-2 text-light"><span id='drinking'>0</p>
+            <p class="text-light align-content-center">Drinking</p>
+         </div>
+     </div>
+  </div>
+  <div class="container">
+    <div class="row">
+       <div class="col-sm">
+          <p id='smoking' class="fs-2 text-light">0</p>
+          <p class="text-light">Smoking</p>
+       </div>
+       <div class="col-sm">
+          <p id='mastrubation' class="fs-2 text-light">0</p>
+          <p class="text-light">mastrubation</p>
+    </div>
+    <div class="col-sm">
+       <p class="fs-2 text-light"><span id='total'>0</p>
+       <p class="text-light align-content-center">Total Days</p>
+    </div>
+ </div>
+</div>
+  
+  <div id="myChart" style="width:100%; max-width:600px; height:500px;">
+</div>
+
+    <div>
+        <canvas id="myChart2" style="width:100%; max-width:1200px; height:400px;">
+    </div>
+
+
+    <!-- <canvas id="myChart2" width="400" height="400"></canvas> -->
+    <script>
+        function animate(obj, initVal, lastVal, duration) {
+         let startTime = null;
+
+      //get the current timestamp and assign it to the currentTime variable
+      let currentTime = Date.now();
+
+      //pass the current timestamp to the step function
+      const step = (currentTime ) => {
+
+      //if the start time is null, assign the current time to startTime
+      if (!startTime) {
+         startTime = currentTime ;
+      }
+
+      //calculate the value to be used in calculating the number to be displayed
+      const progress = Math.min((currentTime - startTime)/ duration, 1);
+
+      //calculate what to be displayed using the value gotten above
+      obj.innerHTML = Math.floor(progress * (lastVal - initVal) + initVal);
+
+      //checking to make sure the counter does not exceed the last value (lastVal)
+      if (progress < 1) {
+         window.requestAnimationFrame(step);
+      } else {
+            window.cancelAnimationFrame(window.requestAnimationFrame(step));
+         }
+      };
+      //start animating
+         window.requestAnimationFrame(step);
+      }
+      let text1 = document.getElementById('0101');
+      let text2 = document.getElementById('0102');
+      let text3 = document.getElementById('0103');
+      const load = () => {
+         animate(text1, 0, 511, 7000);
+         animate(text2, 0, 232, 7000);
+         animate(text3, 100, 25, 7000);
+      }
+
+        let running = [];
+        let exercise = [];
+        let smoking = [];
+        let mastrubation = [];
+        let drinking = [];
+        let label = []
+        const userAction2 = async () => {
+            const response = await fetch('http://localhost:3080/activities');
+            const myJson = await response.json(); //extract JSON from the http response
+
+            let weekMap = {};
+
+            for (let i = 0; i < myJson.length; i++) {
+
+                let weeknumber = 'week' + (myJson[i].week_number - 19);
+
+                if (weekMap.hasOwnProperty(weeknumber)) {
+                    weekMap[weeknumber].push(myJson[i])
+                } else {
+                    weekMap[weeknumber] = [myJson[i]]
+                }
+            }
+
+            let weeknumber=1;
+            let conditional = {
+                'running': false,
+                'exercise': false,
+                'smoking': false,
+                'mastrubation': false,
+                'drinking': false
+            }
+
+            function recursiveAddition(weeknumber){
+                let weekText = 'week'+weeknumber;
+                label.push(weekText);
+
+                let trueCheck = JSON.parse(JSON.stringify(conditional))
+                if(weekMap[weekText]){
+
+                  for (let i = 0; i < weekMap[weekText].length; i++) {
+                    if (weekMap[weekText][i].name == 'running') {
+                        running.push(weekMap[weekText][i].total)
+                        trueCheck['running'] = true;
+                    }
+                    if (weekMap[weekText][i].name == 'exercise') {
+                        exercise.push(weekMap[weekText][i].total)
+                        trueCheck['exercise'] = true;
+                    }
+                    if (weekMap[weekText][i].name == 'smoking') {
+                        smoking.push(weekMap[weekText][i].total)
+                        trueCheck['smoking'] = true;
+                    }
+                    if (weekMap[weekText][i].name == 'mastrubation') {
+                        mastrubation.push(weekMap[weekText][i].total)
+                        trueCheck['mastrubation'] = true;
+                    }
+                    if (weekMap[weekText][i].name == 'drinking') {
+                        drinking.push(weekMap[weekText][i].total)
+                        trueCheck['drinking'] = true;
+                    }
+
+                }
+
+                console.log('text',trueCheck)
+                let nullActivity=[];
+                for(k in trueCheck){
+                    if(!trueCheck[k]){
+                        nullActivity.push(k)
+                    }
+                }
+
+                console.log('null',nullActivity);
+                
+                for(i=0;i<nullActivity.length;i++){
+                    if (nullActivity[i] == 'running') {
+                        running.push('0')
+                    }
+                    if (nullActivity[i] == 'exercise') {
+                        exercise.push('0')
+                    }
+                    if (nullActivity[i] == 'smoking') {
+                        smoking.push('0')
+                    }
+                    if (nullActivity[i] == 'mastrubation') {
+                        mastrubation.push('0')
+                    }
+                    if (nullActivity[i] == 'drinking') {
+                        drinking.push('0')
+                    }
+                }
+
+
+                weeknumber = weeknumber+1;
+                recursiveAddition(weeknumber);
+
+                }
+            }
+
+            recursiveAddition(1);
+            
+
+
+            console.log('tytytyty',label, smoking)
+            var ctx = document.getElementById('myChart2').getContext('2d');
+            var myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: label,
+                    datasets: [
+                        {
+                        label: 'running',
+                        data: running,
+                        backgroundColor: '#3dfc03',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'exercise',
+                        data: exercise,
+                        backgroundColor: '#47c96c',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'smoking',
+                        data: smoking,
+                        backgroundColor: '#db4460',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'mastrubation',
+                        data: mastrubation,
+                        backgroundColor: '#f29bc1',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'drinking',
+                        data: drinking,
+                        backgroundColor: '#4a122a',
+                        borderWidth: 1
+                    }
+                ]
+                },
+                options: {
+                    categoryPercentage: 0.7,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 18
+                        }
+                    }
+                }
+            });
+
+
+        }
+
+        userAction2()
+
+    </script>
+
+    <script>
+
+
+        const userAction = async () => {
+            const response = await fetch('http://localhost:3080/activity/report');
+            const myJson = await response.json(); //extract JSON from the http response
+
+            let dataset = [];
+            dataset.push(['Contry', 'Mhl'])
+
+            let r1,ex1,ms1,sm1,dr1,total;
+
+            for (let i = 0; i < myJson.length; i++) {
+                let dataChild = [];
+                dataChild.push(myJson[i].name)
+                dataChild.push(Number(myJson[i].total))
+                dataset.push(dataChild);
+
+                if(myJson[i].name=='running'){
+                    r1 = myJson[i].total;
+                    total = myJson[i].daysdiff+1;
+                }
+                if(myJson[i].name=='exercise'){
+                    ex1 = myJson[i].total;
+                }
+                if(myJson[i].name=='smoking'){
+                    sm1 = myJson[i].total;
+                }
+                if(myJson[i].name=='mastrubation'){
+                    ms1 = myJson[i].total;
+                }
+                if(myJson[i].name=='drinking'){
+                    dr1 = myJson[i].total;
+                }
+
+            }
+
+            document.getElementById("running").innerHTML = r1;
+            document.getElementById("exercise").innerHTML = ex1;
+            document.getElementById("smoking").innerHTML = sm1;
+            document.getElementById("mastrubation").innerHTML = ms1;
+            document.getElementById("drinking").innerHTML = dr1;
+            document.getElementById("total").innerHTML = total;
+
+            
+
+
+            google.charts.load('current', { 'packages': ['corechart'] });
+            google.charts.setOnLoadCallback(drawChart);
+
+            function drawChart() {
+                var data = google.visualization.arrayToDataTable(dataset);
+
+                console.log(dataset)
+
+                var options = {
+                    title: 'World Wide Wine Production',
+                    is3D: true
+                };
+
+                var chart = new google.visualization.PieChart(document.getElementById('myChart'));
+                chart.draw(data, options);
+            }
+        }
+        userAction();
+    </script>
+
+</body>
+
+</html>
